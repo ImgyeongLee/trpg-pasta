@@ -1,0 +1,250 @@
+:root {
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface-2: #f9f8f5;
+  --surface-3: #efede7;
+  --border: #e2dfd6;
+  --border-strong: #cfcabd;
+  --text: #22201b;
+  --text-muted: #6f6a5f;
+  --text-faint: #9a9488;
+  --accent: #13774e;
+  --accent-strong: #0d5e3c;
+  --accent-soft: #e0f2e8;
+  /* 포인트 색 바탕 위의 글자 색 */
+  --accent-contrast: #ffffff;
+  --ok: #2f8a57;
+  --ok-soft: #e4f3ea;
+  --warn: #b26a00;
+  --warn-soft: #fbf0dc;
+  --danger: #c2413b;
+  --danger-contrast: #ffffff;
+  --danger-soft: #fbe7e5;
+  --dialogue: #b03a6c;
+  --dialogue-soft: #fbe8f0;
+  /* GM 정보 (플레이어에게 내보내지 않는 그룹) — 버튼 색 */
+  --gm: #1f63a8;
+  --gm-soft: #e4effa;
+  --note: #8a6a00;
+  --note-soft: #fcf4d4;
+  --shadow: 0 1px 2px rgb(30 25 15 / 6%), 0 4px 16px rgb(30 25 15 / 6%);
+  --radius: 10px;
+  --radius-sm: 6px;
+  /* 글꼴은 Pretendard로 고정 (앱에 들어 있는 가변 글꼴, 화면에 나온 글자 범위의 조각만 읽는다). 뒤는 읽기 전 잠깐 쓰는 대체 글꼴. */
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17161a;
+    --surface: #201f24;
+    --surface-2: #26252b;
+    --surface-3: #2e2d34;
+    --border: #36343c;
+    --border-strong: #4a4752;
+    --text: #ecebef;
+    --text-muted: #a6a3ae;
+    --text-faint: #75727d;
+    --accent: #4cc98f;
+    --accent-strong: #6fd9a6;
+    --accent-soft: #17322a;
+    --accent-contrast: #0b1f15;
+    --ok: #5cc48a;
+    --ok-soft: #1d3326;
+    --warn: #e5a54a;
+    --warn-soft: #3a2d17;
+    --danger: #ef7c74;
+    --danger-contrast: #2a0e0c;
+    --danger-soft: #3d2222;
+    --dialogue: #ec8db5;
+    --dialogue-soft: #3a2230;
+    --gm: #79b2ee;
+    --gm-soft: #1b2a3e;
+    --note: #e3c25e;
+    --note-soft: #30291a;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.btn.sm {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.dialogue {
+  background: var(--dialogue-soft);
+  color: var(--dialogue);
+}
+
+.badge.gm {
+  background: var(--gm);
+  color: var(--surface);
+}
+
+.badge.heading {
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+
+.badge.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge.image {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
