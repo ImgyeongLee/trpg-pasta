@@ -160,8 +160,10 @@
     color: var(--accent);
   }
 
+  /* 내용이 창보다 길면(시작 화면 등) 페이지 전체가 아니라 여기만 스크롤한다 — 왼쪽 레일이 끊기지 않게. */
   .main {
     min-width: 0;
     min-height: 0;
+    overflow: auto;
   }
 </style>
