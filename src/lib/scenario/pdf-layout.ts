@@ -14,14 +14,60 @@ interface TextPiece {
   size: number;
 }
 
-/** 같은 기준선에 놓인 글자 조각을 한 줄로 묶는다. */
-function groupLines(pieces: TextPiece[]): PdfLine[] {
-  pieces.sort((a, b) => a.baseline - b.baseline || a.x - b.x);
+/** 단의 왼쪽 끝으로 볼 만큼 여러 조각이 같은 x에서 시작해야 하는 수 */
+const COLUMN_MIN_STARTS = 2;
+/** 단 경계는 쪽 너비의 이 비율보다 오른쪽에 있어야 한다 (이름·값 표를 단으로 오인하지 않게) */
+const COLUMN_MIN_X = 0.4;
+/** 같은 단 왼쪽 끝으로 볼 x 차이 (pt) */
+const COLUMN_ALIGN = 3;
+
+/** 단 경계: 이 x보다 오른쪽이면서 top~bottom 높이에 있는 조각은 오른쪽 단이다. */
+interface Gutter {
+  edge: number;
+  top: number;
+  bottom: number;
+}
+
+/**
+ * 단(컬럼) 경계를 찾는다: 여러 조각이 같은 x에서 시작하고, 그 조각들이 놓인 높이에서
+ * 바로 왼쪽을 가로지르는 조각이 하나도 없는 자리. 본문 옆에 「KP 정보」 같은 곁단이 있는 쪽에서
+ * 두 단이 한 줄로 섞이지 않게 한다. (곁단 아래로 본문이 쪽 너비 가득 이어지는 경우도 있어 높이를 제한한다.)
+ */
+function findGutters(pieces: TextPiece[], pageWidth: number): Gutter[] {
+  // 공백 조각은 너비가 엉터리인 경우가 있어 보지 않는다.
+  const solid = pieces.filter((p) => p.str.trim());
+  const sameRow = (a: TextPiece, b: TextPiece) => Math.abs(a.baseline - b.baseline) < Math.min(a.size, b.size) * 0.5;
+  // 줄 머리 조각만 단의 왼쪽 끝 후보다 (「【관련 항목】」의 「항목】」처럼 줄 중간 조각이 우연히 줄 맞는 것은 빼고)
+  const startsLine = (p: TextPiece) => !solid.some((q) => q !== p && sameRow(p, q) && q.x < p.x && q.x + q.width > p.x - p.size * 0.5);
+  const candidates = solid.filter((p) => p.x >= pageWidth * COLUMN_MIN_X && startsLine(p)).sort((a, b) => a.x - b.x);
+  const gutters: Gutter[] = [];
+  for (const first of candidates) {
+    if (gutters.some((g) => first.x >= g.edge && first.x - g.edge < COLUMN_ALIGN + 2)) continue;
+    const aligned = candidates.filter((p) => p.x >= first.x && p.x - first.x <= COLUMN_ALIGN);
+    if (aligned.length < COLUMN_MIN_STARTS) continue;
+    const edge = first.x - 1.5;
+    // 높이는 같은 x에서 시작하는 모든 조각으로 잡는다. 양쪽 맞춤 본문 바로 옆에 붙은 곁단 첫 줄은
+    // 줄 머리 판정에서 빠지기 때문이다.
+    const column = solid.filter((p) => p.x >= first.x && p.x - first.x <= COLUMN_ALIGN);
+    const top = Math.min(...column.map((p) => p.baseline - p.size * 1.5));
+    const bottom = Math.max(...column.map((p) => p.baseline + p.size * 0.5));
+    // 전각 문장 부호(「」)는 글자 상자가 조금 넘치므로 오른쪽 단 시작을 1pt 넘어야 가로지른 것으로 본다.
+    const crossed = solid.some((p) => p.baseline >= top && p.baseline <= bottom && p.x < edge && p.x + p.width > first.x + 1);
+    if (!crossed) gutters.push({ edge, top, bottom });
+  }
+  return gutters;
+}
+
+/** 같은 기준선에 놓인 글자 조각을 한 줄로 묶는다. 단이 나뉜 쪽은 단마다 따로 묶고 줄에 단 번호를 붙인다. */
+function groupLines(pieces: TextPiece[], pageWidth: number): PdfLine[] {
+  const gutters = findGutters(pieces, pageWidth);
+  const columnOf = (p: TextPiece) => gutters.filter((g) => p.x >= g.edge && p.baseline >= g.top && p.baseline <= g.bottom).length;
+  pieces.sort((a, b) => columnOf(a) - columnOf(b) || a.baseline - b.baseline || a.x - b.x);
   const rows: TextPiece[][] = [];
   for (const piece of pieces) {
     const row = rows[rows.length - 1];
     const ref = row?.[0];
-    if (ref && Math.abs(piece.baseline - ref.baseline) < Math.min(piece.size, ref.size) * 0.5) {
+    if (ref && columnOf(piece) === columnOf(ref) && Math.abs(piece.baseline - ref.baseline) < Math.min(piece.size, ref.size) * 0.5) {
       row.push(piece);
     } else {
       rows.push([piece]);
@@ -48,6 +94,7 @@ function groupLines(pieces: TextPiece[]): PdfLine[] {
       y: baseline - size,
       width: right - left,
       fontSize: size,
+      ...(gutters.length ? { column: columnOf(row[0]) } : {}),
     };
   }).filter((l) => l.text.length > 0);
 }
@@ -63,7 +110,7 @@ export async function extractLines(page: PDFPageProxy, viewport: pdfjs.PageViewp
     if (size < 1 || Math.abs(tx[1]) > Math.abs(tx[0]) * 0.5) continue;
     pieces.push({ str: item.str, x: tx[4], baseline: tx[5], width: item.width * viewport.scale, size });
   }
-  return groupLines(pieces);
+  return groupLines(pieces, viewport.width);
 }
 
 export interface Rect {

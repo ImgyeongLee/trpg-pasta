@@ -2,7 +2,9 @@
   // 복사 페이지의 시나리오 카드. 카드 자체를 누르면 복사된다 (GM 메모는 참고용으로만 보이고 복사되지 않는다).
   import { copyImage, copyText } from "$lib/clipboard";
   import { BookKey, Check, Copy, Group, StickyNote, TriangleAlert, UserRound } from "$lib/icons";
+  import { layout } from "$lib/layout.svelte";
   import ImageView from "./ImageView.svelte";
+  import { unquote } from "./quotes";
   import { scenario } from "./state.svelte";
   import { isSecret, tags } from "./tags.svelte";
   import type { Block } from "./types";
@@ -20,13 +22,15 @@
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const text = $derived(block.type === "image" ? "" : scenario.finalText(block));
+  /** 클립보드에 넣을 글: 「따옴표 빼고 복사」가 켜져 있으면 대사의 바깥 따옴표를 뗀다 (카드에는 그대로 보인다) */
+  const copiedText = $derived(layout.copyUnquote && block.type === "sentence" && block.kind === "dialogue" ? unquote(text) : text);
   /** GM 정보 그룹: 보이기만 하고 복사하지 않는다 */
   const gm = $derived(isSecret(block));
 
   export async function copy() {
     if (gm) return;
     try {
-      if (block.type !== "image") await copyText(text);
+      if (block.type !== "image") await copyText(copiedText);
       else if (block.imageId) await copyImage(scenario.images.get(block.imageId)!.url);
       else await copyText(block.caption ?? "");
       failed = false;

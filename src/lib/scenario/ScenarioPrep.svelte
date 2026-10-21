@@ -13,6 +13,7 @@
     PanelLeftOpen,
     PanelRightClose,
     PanelRightOpen,
+    Pencil,
     Play,
     RotateCcw,
     Save,
@@ -25,7 +26,7 @@
   import Splitter from "$lib/ui/Splitter.svelte";
   import Switch from "$lib/ui/Switch.svelte";
   import SourceViewer from "./viewer/SourceViewer.svelte";
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
   import ExportMenu from "./ExportMenu.svelte";
   import { askUnsaved, sessions, timeAgo } from "./session.svelte";
   import ImportPanel from "./ImportPanel.svelte";
@@ -61,9 +62,30 @@
     void $state.snapshot(scenario.rules);
     void scenario.activeIndex;
     void scenario.source;
+    void scenario.sourceName;
     const handle = setTimeout(() => sessions.check(), 300);
     return () => clearTimeout(handle);
   });
+
+  // ── 작업 제목 바꾸기: 제목을 두 번 누르거나 연필 버튼. 원본 파일 이름은 그대로고, 저장·내보내기 이름에 쓰인다. ──
+  let renaming = $state(false);
+  let titleDraft = $state("");
+  let titleInput = $state<HTMLInputElement>();
+
+  async function startRename() {
+    titleDraft = scenario.sourceName ?? "";
+    renaming = true;
+    await tick();
+    titleInput?.focus();
+    titleInput?.select();
+  }
+
+  function commitRename() {
+    if (!renaming) return;
+    renaming = false;
+    const name = titleDraft.trim();
+    if (name) scenario.sourceName = name;
+  }
 
   /** 「새 시나리오」: 저장 안 된 변경이 있으면 먼저 묻는다. */
   async function newScenario() {
@@ -200,7 +222,31 @@
       <div class="source">
         <FileText size={18} />
         <div class="source-text">
-          <strong title={scenario.sourceName}>{scenario.sourceName}</strong>
+          {#if renaming}
+            <input
+              class="input title-input"
+              bind:this={titleInput}
+              bind:value={titleDraft}
+              aria-label="작업 제목"
+              onkeydown={(e) => {
+                if (e.isComposing || e.keyCode === 229) return;
+                if (e.key === "Enter") commitRename();
+                else if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  renaming = false;
+                }
+              }}
+              onblur={commitRename}
+            />
+          {:else}
+            <span class="title">
+              <strong title="{scenario.sourceName} — 두 번 누르면 제목 바꾸기" ondblclick={startRename}>{scenario.sourceName}</strong>
+              <button class="icon-btn rename" onclick={startRename} title="제목 바꾸기 (저장·내보내기 이름에 쓰임)" aria-label="제목 바꾸기">
+                <Pencil size={13} />
+              </button>
+            </span>
+          {/if}
           <span class="muted status">
             {#if scenario.status === "processing"}
               <LoaderCircle size={12} class="spin" />
@@ -376,10 +422,38 @@
     min-width: 0;
   }
 
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
   .source-text strong {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .rename {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+
+  .title:hover .rename,
+  .rename:focus-visible {
+    opacity: 1;
+  }
+
+  .title-input {
+    width: 320px;
+    max-width: 100%;
+    height: 26px;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .status {

@@ -80,6 +80,8 @@ export interface PdfLine {
   y: number;
   width: number;
   fontSize: number;
+  /** 단이 나뉜 쪽에서 몇 번째 단인지 (0부터, 왼쪽부터). 단이 하나면 없음 */
+  column?: number;
 }
 
 export interface PdfPageInput {

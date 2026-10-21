@@ -294,6 +294,7 @@ mod tests {
                 y: 400.0,
                 width,
                 font_size: 10.0,
+                column: 0,
             }],
             images: vec![],
         };

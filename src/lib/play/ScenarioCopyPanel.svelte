@@ -1,11 +1,18 @@
+<script module lang="ts">
+  /** 집합마다 마지막으로 보던 스크롤 위치와 고른 카드 (집합 id 기준). 앱이 켜져 있는 동안만, 복사 페이지를 닫았다 열어도 남는다. */
+  const memory = new Map<number, { scrollTop: number; selectedId: number | null }>();
+</script>
+
 <script lang="ts">
   import { untrack } from "svelte";
   import { copyText } from "$lib/clipboard";
   import { BookOpen, ChevronLeft, ChevronRight, Copy, LoaderCircle, RotateCcw } from "$lib/icons";
+  import { layout } from "$lib/layout.svelte";
   import CopyRow from "$lib/scenario/CopyRow.svelte";
   import { scenario } from "$lib/scenario/state.svelte";
   import { isSecret } from "$lib/scenario/tags.svelte";
   import Select from "$lib/ui/Select.svelte";
+  import Switch from "$lib/ui/Switch.svelte";
   import type { GroupBlock, SentenceBlock } from "$lib/scenario/types";
 
   let { active = true }: { active?: boolean } = $props();
@@ -24,14 +31,37 @@
     list?.querySelector(`[data-block-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
   }
 
-  // 복사 페이지를 열면 편집기 커서가 있던 줄의 카드에서 시작한다.
+  /** 지금 화면에 그려진 집합 id (집합이 바뀐 것을 알아채는 데만 쓰므로 반응형이 아니다) */
+  let shownId: number | null = null;
+
+  function remember() {
+    if (shownId !== null && list) memory.set(shownId, { scrollTop: list.scrollTop, selectedId });
+  }
+
+  // 집합이 바뀌면 그 집합에서 마지막으로 보던 위치·카드로 돌아간다 (처음 여는 집합은 맨 위).
+  // 복사 페이지를 열 때는 편집기 커서가 있던 줄의 카드에서 시작한다.
   $effect(() => {
+    const sectionId = scenario.active?.id ?? null;
     untrack(() => {
-      const id = scenario.focusedId;
-      if (id === null || !rows.some((r) => r.block.id === id)) return;
-      selectedId = id;
-      list?.querySelector(`[data-block-id="${id}"]`)?.scrollIntoView({ block: "center" });
+      if (sectionId === shownId) return;
+      const opening = shownId === null;
+      shownId = sectionId;
+      const focused = scenario.focusedId;
+      if (opening && focused !== null && rows.some((r) => r.block.id === focused)) {
+        selectedId = focused;
+        list?.querySelector(`[data-block-id="${focused}"]`)?.scrollIntoView({ block: "center" });
+        return;
+      }
+      const saved = sectionId === null ? undefined : memory.get(sectionId);
+      selectedId = saved && rows.some((r) => r.block.id === saved.selectedId) ? saved.selectedId : null;
+      if (list) list.scrollTop = saved?.scrollTop ?? 0;
     });
+  });
+
+  // 카드를 고를 때마다 기억해 둔다 (스크롤은 onscroll에서).
+  $effect(() => {
+    void selectedId;
+    untrack(remember);
   });
 
   function selectRelative(step: 1 | -1) {
@@ -101,12 +131,15 @@
       {/if}
     </div>
     <div class="tools">
+      <span class="unquote" title="줄 전체가 따옴표로 감싸인 대사를 복사할 때 바깥 따옴표를 뺍니다 (카드에는 그대로 보임)">
+        <Switch bind:checked={layout.copyUnquote} size="sm" label="따옴표 빼고 복사" />
+      </span>
       <button class="btn sm" onclick={() => scenario.resetUsed()} title="복사해서 흐려진 줄을 다시 선명하게"><RotateCcw size={14} /> 사용 표시 지우기</button>
       <button class="btn sm" onclick={copySection} disabled={!scenario.active}><Copy size={14} /> {sectionCopied ? "복사됨" : "집합 전체 복사"}</button>
     </div>
   </header>
 
-  <div class="list" role="listbox" aria-label="복사할 문장" bind:this={list}>
+  <div class="list" role="listbox" aria-label="복사할 문장" bind:this={list} onscroll={remember}>
     {#each rows as { block, index }, i (block.id)}
       <CopyRow
         bind:this={copyRows[block.id]}
@@ -162,6 +195,12 @@
   .nav :global(.icon) {
     margin-right: 4px;
     color: var(--accent);
+  }
+
+  .unquote {
+    display: inline-flex;
+    margin-right: 6px;
+    font-size: 12px;
   }
 
   .processing {

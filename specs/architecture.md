@@ -37,13 +37,14 @@ src/
     tags.svelte.ts    그룹 태그 (프리셋 + 만든 태그)
     session.svelte.ts 세이브 목록·저장·열기, 저장 안 됨 표시
     export.svelte.ts  텍스트 만들기, 그림 파일 이름
+    quotes.ts         대사 바깥 따옴표 떼기 (복사 페이지 「따옴표 빼고 복사」)
     pdf.ts, pdf.worker.ts, pdf-layout.ts, stream-polyfill.ts   PDF 읽기·그림 잘라내기
     gdocs.ts          구글 문서 가져오기
     ScenarioPrep.svelte  편집 페이지 (윗줄, 줄 찾기 칩, 집합 목록, 이름 치환 패널, 원본 보기)
     editor/           CodeMirror 편집기 (SectionEditor, lines, decorations, LineBar, GroupCard, api)
     viewer/           원본 보기 (PdfViewer, GdocViewer, TextViewer, match, sync)
     TagPicker, CopyRow, NoteEditor, SpeakerTag, ImageView, SectionList, RulesPanel, ExportMenu, ImportPanel
-  lib/play/           복사 페이지 (CopyPage, ScenarioCopyPanel, GroupList)
+  lib/play/           복사 페이지 (CopyPage, ScenarioCopyPanel: 집합마다 보던 위치를 모듈 변수에 기억, GroupList)
   lib/macros/         채팅 매크로 (state, template, MacroBoard, MacroList, MacroCard)
 ```
 
@@ -76,6 +77,7 @@ GroupTag { id, name, color /* #rrggbb */, preset?, secret? /* GM 정보: 복사�
 ## PDF 추출
 
 - `pdf.ts`의 `extractPage`가 쪽마다 `pdf-layout.ts`의 `extractLines`(글자 조각 → 줄)와 `findFigures`를 부르고, 그림 영역을 렌더링해 잘라낸 뒤(`renderAndCrop`) 줄·그림 위치를 Rust로 넘긴다.
+- `extractLines`는 단 경계를 먼저 찾는다: 쪽 너비 40%보다 오른쪽에서 줄 머리 조각 2개 이상이 같은 x(±3pt)에서 시작하고, 그 조각들이 놓인 높이에서 그 x를 가로지르는 조각이 없으면 단 경계. 단마다 따로 줄을 묶고 `PdfLine.column`(0부터)을 붙인다. Rust `build_units`는 단 순서로 읽고, 단마다 좌우 여백·줄 간격을 따로 재며, 단 사이와 단이 나뉜 쪽의 끝에서는 문단을 닫는다.
 - `findFigures`는 연산자 목록을 한 번 훑는다.
   - 그림 연산자(`paintImageXObject`·인라인·반복·`paintImageMaskXObject`)의 영역 (24pt 미만, 글자 있는 쪽의 배경 그림은 뺌)
   - 칠한 경로(`constructPath`의 minMax 상자)를 서로 닿는 것끼리 묶어, 경로 8개 이상이고 안의 글자 수 ≤ 경로 수 × 2인 무리를 벡터 그림으로 본다 (배치도는 그림, 표·글상자는 글).
@@ -89,7 +91,7 @@ GroupTag { id, name, color /* #rrggbb */, preset?, secret? /* GM 정보: 복사�
 | 작업 세이브          | 앱 데이터 폴더 `sessions/<id>.trpgsave` + `<id>.meta.json` | gzip JSON / JSON                     |
 | 세이브 파일 내보내기 | 사용자가 고른 곳 `*.trpgsave`                              | gzip JSON (열 때는 일반 JSON도 받음) |
 | 채팅 매크로          | 앱 데이터 폴더 `macros.json`                               | JSON                                 |
-| 화면 배치            | localStorage `trpg.layout`                                 | JSON                                 |
+| 화면 배치·복사 설정  | localStorage `trpg.layout` (「따옴표 빼고 복사」 포함)     | JSON                                 |
 | 정리 옵션            | localStorage `trpg.scenario.options`                       | JSON                                 |
 | 이름 치환 규칙       | localStorage `trpg.scenario.rules` (세이브에도 들어감)     | JSON                                 |
 | 만든 태그            | localStorage `trpg.groupTags` (쓴 것은 세이브에도 들어감)  | JSON                                 |

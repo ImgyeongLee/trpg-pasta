@@ -18,6 +18,7 @@ interface Saved {
   macroSize: number;
   showScenario: boolean;
   showMacros: boolean;
+  copyUnquote: boolean;
 }
 
 const DEFAULTS: Saved = {
@@ -33,6 +34,7 @@ const DEFAULTS: Saved = {
   macroSize: 400,
   showScenario: true,
   showMacros: true,
+  copyUnquote: false,
 };
 
 function load(): Saved {
@@ -64,6 +66,8 @@ class Layout {
   macroSize = $state(DEFAULTS.macroSize);
   showScenario = $state(DEFAULTS.showScenario);
   showMacros = $state(DEFAULTS.showMacros);
+  /** 대사 카드를 복사할 때 바깥 따옴표를 뺄지 */
+  copyUnquote = $state(DEFAULTS.copyUnquote);
 
   constructor() {
     Object.assign(this, load());
@@ -82,6 +86,7 @@ class Layout {
           macroSize: this.macroSize,
           showScenario: this.showScenario,
           showMacros: this.showMacros,
+          copyUnquote: this.copyUnquote,
         };
         try {
           localStorage.setItem(KEY, JSON.stringify(saved));
