@@ -1,6 +1,6 @@
 [package]
 name = "trpg-package"
-version = "0.1.0"
+version = "0.2.0"
 description = "TRPG 게임 매니저(GM)를 위한 데스크탑 도구 모음"
 authors = ["ImgyeongLee"]
 license = "AGPL-3.0-only"
