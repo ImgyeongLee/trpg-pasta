@@ -79,8 +79,13 @@ async function renderAndCrop(page: PDFPageProxy, rects: Rect[]): Promise<(Stored
 
 let imageSeq = 0;
 
-/** 한 쪽을 Rust로 넘길 형태로 추출한다. 잘라낸 그림은 `store`에 넣는다. */
-export async function extractPage(pdf: PDFDocumentProxy, pageNumber: number, store: Map<string, StoredImage>): Promise<PdfPageInput> {
+/** 한 쪽을 Rust로 넘길 형태로 추출한다. 잘라낸 그림은 `store`에 넣는다. `withImages`가 꺼져 있으면 그림은 넣지 않는다. */
+export async function extractPage(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+  store: Map<string, StoredImage>,
+  withImages = true,
+): Promise<PdfPageInput> {
   const page = await pdf.getPage(pageNumber);
   try {
     const viewport = page.getViewport({ scale: 1 });
@@ -89,6 +94,8 @@ export async function extractPage(pdf: PDFDocumentProxy, pageNumber: number, sto
     let rects = figures.rects;
     // 그림 안의 라벨은 그림에 이미 보이므로 문장으로 넣지 않는다.
     const lines = allLines.filter((l) => !figures.covered.has(l));
+    // 「그림 추출」을 끄면 그림 영역은 찾되(그 안의 라벨을 빼려고) 잘라 넣지 않는다. 렌더링도 하지 않아 빨라진다.
+    if (!withImages) return { pageNumber, width: viewport.width, height: viewport.height, lines, images: [] };
     // 글자 없이 그림만 있는 쪽(스캔본 등)은 쪽 전체를 그림으로 보여준다.
     if (allLines.length === 0 && rects.length > 0) rects = [{ x: 0, y: 0, w: viewport.width, h: viewport.height }];
 

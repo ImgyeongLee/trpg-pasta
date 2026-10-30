@@ -53,6 +53,8 @@ export interface ProcessOptions {
   joinLinesWithoutSpace: boolean;
   removePageNumbers: boolean;
   removeHeaders: boolean;
+  /** PDF에서 그림을 잘라 그림 블록으로 넣을지. 끄면 글만 정리한다 (프런트엔드에서만 쓰고 Rust는 무시한다) */
+  extractImages: boolean;
 }
 
 export interface Carry {

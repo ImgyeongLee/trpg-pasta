@@ -41,6 +41,7 @@ const DEFAULT_OPTIONS: ProcessOptions = {
   joinLinesWithoutSpace: false,
   removePageNumbers: true,
   removeHeaders: true,
+  extractImages: true,
 };
 
 let seq = 0;
@@ -415,7 +416,7 @@ class ScenarioState {
         const pages: PdfPageInput[] = [];
         for (let n = first; n <= last; n++) {
           if (signal.aborted) break;
-          pages.push(await extractPage(pdf, n, this.images));
+          pages.push(await extractPage(pdf, n, this.images, this.options.extractImages));
           this.progress.done = n;
         }
         if (pages.length === 0) break;

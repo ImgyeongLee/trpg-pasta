@@ -77,6 +77,7 @@ GroupTag { id, name, color /* #rrggbb */, preset?, secret? /* GM 정보: 복사�
 ## PDF 추출
 
 - `pdf.ts`의 `extractPage`가 쪽마다 `pdf-layout.ts`의 `extractLines`(글자 조각 → 줄)와 `findFigures`를 부르고, 그림 영역을 렌더링해 잘라낸 뒤(`renderAndCrop`) 줄·그림 위치를 Rust로 넘긴다.
+- 정리 옵션 `extractImages`(「그림 추출」)가 꺼져 있으면 `extractPage`는 `findFigures`로 그림 영역 안 줄만 빼고 렌더링·잘라내기를 건너뛰어 그림 없이 넘긴다. 이 옵션은 프런트엔드에서만 쓰고 Rust `ProcessOptions`는 모르는 필드로 무시한다.
 - `extractLines`는 단 경계를 먼저 찾는다: 쪽 너비 40%보다 오른쪽에서 줄 머리 조각 2개 이상이 같은 x(±3pt)에서 시작하고, 그 조각들이 놓인 높이에서 그 x를 가로지르는 조각이 없으면 단 경계. 단마다 따로 줄을 묶고 `PdfLine.column`(0부터)을 붙인다. Rust `build_units`는 단 순서로 읽고, 단마다 좌우 여백·줄 간격을 따로 재며, 단 사이와 단이 나뉜 쪽의 끝에서는 문단을 닫는다.
 - `findFigures`는 연산자 목록을 한 번 훑는다.
   - 그림 연산자(`paintImageXObject`·인라인·반복·`paintImageMaskXObject`)의 영역 (24pt 미만, 글자 있는 쪽의 배경 그림은 뺌)

@@ -91,6 +91,7 @@
   }
 
   const optionItems = [
+    { key: "extractImages", label: "그림 추출", hint: "PDF 속 그림·배치도를 잘라 그 자리에 넣습니다. 끄면 글만 정리합니다 (그림 안의 글자는 그대로 빠짐). 그림은 나중에 원본 보기의 「그림 자르기」로 넣을 수 있습니다." },
     { key: "removePageNumbers", label: "쪽수 제거", hint: "여백의 12, - 12 -, 12 / 40, p.12 같은 쪽 번호를 지웁니다." },
     { key: "removeHeaders", label: "반복되는 머리글/바닥글 제거", hint: "여러 쪽에 같은 자리로 반복되는 제목 줄을 지웁니다 (PDF)." },
     { key: "splitOnEllipsis", label: "말줄임표 뒤에서 문장 나누기", hint: "끄면 말줄임표(…, ......)를 문장 끝으로 보지 않고 문장을 이어 둡니다." },

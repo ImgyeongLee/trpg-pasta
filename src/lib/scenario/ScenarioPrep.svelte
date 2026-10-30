@@ -257,7 +257,7 @@
               {scenario.status === "cancelled" ? "중간에 멈춤 · " : ""}
               쪽수 {scenario.stats.removedPageNumbers}개 · 머리글/바닥글 {scenario.stats.removedHeaders}개 제거
               {#if scenario.stats.pagesWithoutText.length}
-                · <span class="warn-text" title="스캔본이면 글자를 읽을 수 없어 쪽 전체를 그림으로 넣었습니다">
+                · <span class="warn-text" title={scenario.options.extractImages ? "스캔본이면 글자를 읽을 수 없어 쪽 전체를 그림으로 넣었습니다" : "스캔본이면 글자를 읽을 수 없습니다 (「그림 추출」이 꺼져 있어 그림도 넣지 않았습니다)"}>
                   글자 없는 쪽 {scenario.stats.pagesWithoutText.length}개
                 </span>
               {/if}
