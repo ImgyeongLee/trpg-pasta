@@ -2,6 +2,8 @@
   // 「현재 줄」 막대: 커서가 있는 줄의 종류·화자·메모를 바꾼다. 여러 줄을 고르면 한꺼번에 처리.
   import {
     BookKey,
+    ChevronDown,
+    ChevronUp,
     Group,
     Heading,
     MessageSquareQuote,
@@ -11,6 +13,7 @@
     Trash,
     Ungroup,
   } from "$lib/icons";
+  import { layout } from "$lib/layout.svelte";
   import Select from "$lib/ui/Select.svelte";
   import type { SelectOption } from "$lib/ui/select";
   import { focusBlock } from "../focus";
@@ -73,6 +76,15 @@
 
 </script>
 
+{#if !layout.lineBarOpen}
+  <!-- 접힌 막대: 지금 줄만 보여준다. 메모 칸(⌘⇧M)과 단축키는 접혀 있어도 동작한다. -->
+  <div class="bar collapsed">
+    <button onclick={() => (layout.lineBarOpen = true)} title="현재 줄 막대 펼치기">
+      <ChevronDown size={14} />
+      {#if chosen.length > 1}{chosen.length}줄 선택{:else if block}{lineNo}번째 줄{block.page ? ` · ${block.page}쪽` : ""}{groupLabel ? ` · ${groupLabel}` : ""}{:else}현재 줄{/if}
+    </button>
+  </div>
+{:else}
 <div class="bar">
   {#if chosen.length > 1}
     <span class="label">{chosen.length}줄 선택</span>
@@ -137,7 +149,11 @@
   {:else}
     <span class="label muted">줄을 누르면 여기에서 종류·화자·메모를 바꿀 수 있어요</span>
   {/if}
+  <button class="icon-btn collapse" onclick={() => (layout.lineBarOpen = false)} title="현재 줄 막대 접기" aria-label="현재 줄 막대 접기">
+    <ChevronUp size={16} />
+  </button>
 </div>
+{/if}
 {#if block && showNote}
   <div class="note">
     <NoteEditor
@@ -159,6 +175,37 @@
     padding: 6px 16px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
+  }
+
+  .collapse {
+    width: 26px;
+    height: 26px;
+    margin-left: auto;
+    color: var(--text-muted);
+  }
+
+  .bar.collapsed {
+    min-height: 0;
+    padding: 0;
+  }
+
+  .bar.collapsed button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+  }
+
+  .bar.collapsed button:hover {
+    background: var(--surface-2);
+    color: var(--text);
   }
 
   .label {

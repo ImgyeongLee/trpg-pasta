@@ -35,8 +35,9 @@
   color-scheme: light;
 }
 
+/* 다크 테마: 테마가 「시스템」이고 OS가 다크일 때, 또는 테마를 「다크」로 골랐을 때 (→ layout.theme) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #17161a;
     --surface: #201f24;
     --surface-2: #26252b;
@@ -66,6 +67,37 @@
     --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
     color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17161a;
+  --surface: #201f24;
+  --surface-2: #26252b;
+  --surface-3: #2e2d34;
+  --border: #36343c;
+  --border-strong: #4a4752;
+  --text: #ecebef;
+  --text-muted: #a6a3ae;
+  --text-faint: #75727d;
+  --accent: #4cc98f;
+  --accent-strong: #6fd9a6;
+  --accent-soft: #17322a;
+  --accent-contrast: #0b1f15;
+  --ok: #5cc48a;
+  --ok-soft: #1d3326;
+  --warn: #e5a54a;
+  --warn-soft: #3a2d17;
+  --danger: #ef7c74;
+  --danger-contrast: #2a0e0c;
+  --danger-soft: #3d2222;
+  --dialogue: #ec8db5;
+  --dialogue-soft: #3a2230;
+  --gm: #79b2ee;
+  --gm-soft: #1b2a3e;
+  --note: #e3c25e;
+  --note-soft: #30291a;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+  color-scheme: dark;
 }
 
 * {

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import { extractPage, openPdf, recropImages, sha256 } from "./pdf";
 import { GM_TAG, isSecret, tags } from "./tags.svelte";
 import type {
@@ -317,6 +317,8 @@ class ScenarioState {
 
   reset() {
     this.#abort?.abort();
+    this.expandedGroups.clear();
+    this.usedLines.clear();
     for (const img of this.images.values()) URL.revokeObjectURL(img.url);
     this.images.clear();
     this.sections = [];
@@ -872,6 +874,22 @@ class ScenarioState {
 
   resetUsed() {
     for (const s of this.sections) for (const b of s.blocks) b.used = false;
+    this.usedLines.clear();
+  }
+
+  // ── 복사 페이지: 그룹 「한 줄씩」 (앱이 켜져 있는 동안만, 세이브에 넣지 않는다) ──
+
+  /** 줄마다 카드로 펼친 그룹 id */
+  expandedGroups = new SvelteSet<number>();
+  /** 펼친 그룹에서 복사한 줄 (`그룹 id:줄 번호`) */
+  usedLines = new SvelteSet<string>();
+
+  /** 그룹의 한 줄을 복사했다고 표시한다. 모든 줄을 복사하면 그룹 카드도 복사한 것으로 본다. */
+  markLineUsed(block: GroupBlock, line: number, count: number) {
+    this.usedLines.add(`${block.id}:${line}`);
+    let all = true;
+    for (let i = 0; i < count; i++) if (!this.usedLines.has(`${block.id}:${i}`)) all = false;
+    if (all) block.used = true;
   }
 }
 

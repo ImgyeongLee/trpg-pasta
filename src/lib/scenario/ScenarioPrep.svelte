@@ -3,6 +3,8 @@
     ArrowLeftRight,
     BookKey,
     BookOpenText,
+    ChevronDown,
+    ChevronUp,
     Eye,
     FileText,
     FolderOpen,
@@ -356,24 +358,36 @@
       {/if}
 
       <section class="content" style:order="4">
-        <div class="toolbar">
-          <div class="filters" aria-label="줄 찾기">
-            {#each filters as f (f.id)}
-              <button class="filter" onclick={() => jumpTo(f.id)} disabled={!counts[f.id]} title="다음 「{f.label}」 줄로 이동">
-                {f.label} <span class="count">{counts[f.id]}</span>
+        {#if layout.toolbarOpen}
+          <div class="toolbar">
+            <div class="filters" aria-label="줄 찾기">
+              {#each filters as f (f.id)}
+                <button class="filter" onclick={() => jumpTo(f.id)} disabled={!counts[f.id]} title="다음 「{f.label}」 줄로 이동">
+                  {f.label} <span class="count">{counts[f.id]}</span>
+                </button>
+              {/each}
+            </div>
+            <div class="tools">
+              <span class="toggle" title="이름 치환 결과를 문장 아래에 보여줍니다">
+                <Switch size="sm" bind:checked={scenario.showPreview}><Eye size={14} /> 치환 미리보기</Switch>
+              </span>
+              <button class="btn sm" onclick={() => editor.handle?.selectAll()} title="집합 전체 선택 (⌘/Ctrl+A)"><ListChecks size={14} /> 전체 선택</button>
+              <button class="btn sm" onclick={undo} disabled={!scenario.canUndo} title="집합 나누기·합치기·삭제·이름 바꾸기 되돌리기 (글자 수정은 ⌘Z)">
+                <Undo2 size={14} /> 집합 되돌리기
               </button>
-            {/each}
+              <button class="icon-btn collapse" onclick={() => (layout.toolbarOpen = false)} title="줄 찾기·도구 줄 접기" aria-label="줄 찾기·도구 줄 접기">
+                <ChevronUp size={16} />
+              </button>
+            </div>
           </div>
-          <div class="tools">
-            <span class="toggle" title="이름 치환 결과를 문장 아래에 보여줍니다">
-              <Switch size="sm" bind:checked={scenario.showPreview}><Eye size={14} /> 치환 미리보기</Switch>
-            </span>
-            <button class="btn sm" onclick={() => editor.handle?.selectAll()} title="집합 전체 선택 (⌘/Ctrl+A)"><ListChecks size={14} /> 전체 선택</button>
-            <button class="btn sm" onclick={undo} disabled={!scenario.canUndo} title="집합 나누기·합치기·삭제·이름 바꾸기 되돌리기 (글자 수정은 ⌘Z)">
-              <Undo2 size={14} /> 집합 되돌리기
+        {:else}
+          <div class="toolbar-collapsed">
+            <button onclick={() => (layout.toolbarOpen = true)} title="줄 찾기·도구 줄 펼치기">
+              <ChevronDown size={14} /> 줄 찾기·도구
+              <span class="summary">{filters.filter((f) => counts[f.id]).map((f) => `${f.label} ${counts[f.id]}`).join(" · ")}</span>
             </button>
           </div>
-        </div>
+        {/if}
         <LineBar />
         <p class="keys muted">
           한 줄이 복사 카드 하나 · Enter로 줄 나누기 · ⌘/Ctrl+Enter 다음 줄 · ⌘⇧G 그룹으로 묶기 · ⌘⇧M 메모 · ⌘Z 되돌리기
@@ -592,10 +606,60 @@
   }
 
   .filters,
-  .tools,
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
 
+  /* 누를 수 없는 칩(개수 0)도 글자는 읽히게: 투명도 대신 옅은 바탕·회색 글자 */
   .filter:disabled {
-    opacity: 0.45;
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+
+  .filter:disabled .count {
+    color: var(--text-faint);
+  }
+
+  .tools .btn:disabled {
+    opacity: 0.6;
+  }
+
+  .collapse {
+    width: 26px;
+    height: 26px;
+    color: var(--text-muted);
+  }
+
+  .toolbar-collapsed {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toolbar-collapsed button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .toolbar-collapsed button:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .summary {
+    overflow: hidden;
+    color: var(--text-faint);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .filter:not(:disabled):hover {
@@ -617,7 +681,8 @@
 
 
   .count {
-    color: var(--text-faint);
+    color: var(--text-muted);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 

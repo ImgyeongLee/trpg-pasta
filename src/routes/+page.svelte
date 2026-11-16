@@ -6,6 +6,7 @@
   import ScenarioPrep from "$lib/scenario/ScenarioPrep.svelte";
   import { layout } from "$lib/layout.svelte";
   import PinButton from "$lib/ui/PinButton.svelte";
+  import ThemeButton from "$lib/ui/ThemeButton.svelte";
   import { setAlwaysOnTop } from "$lib/window";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import DialogHost from "$lib/ui/DialogHost.svelte";
@@ -88,6 +89,7 @@
       </button>
     {/each}
     <div class="spacer"></div>
+    <ThemeButton />
     <PinButton variant="rail" />
     <button class="rail-item play" onclick={() => (copying = true)} title="복사 페이지 (돌아올 때는 Esc)">
       <Play size={20} />

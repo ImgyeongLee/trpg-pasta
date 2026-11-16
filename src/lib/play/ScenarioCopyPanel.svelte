@@ -1,41 +1,71 @@
 <script module lang="ts">
   /** 집합마다 마지막으로 보던 스크롤 위치와 고른 카드 (집합 id 기준). 앱이 켜져 있는 동안만, 복사 페이지를 닫았다 열어도 남는다. */
-  const memory = new Map<number, { scrollTop: number; selectedId: number | null }>();
+  const memory = new Map<number, { scrollTop: number; selectedKey: string | null }>();
 </script>
 
 <script lang="ts">
   import { untrack } from "svelte";
   import { copyText } from "$lib/clipboard";
-  import { BookOpen, ChevronLeft, ChevronRight, Copy, LoaderCircle, RotateCcw } from "$lib/icons";
+  import { BookOpen, ChevronLeft, ChevronRight, Copy, Group, LoaderCircle, RotateCcw } from "$lib/icons";
   import { layout } from "$lib/layout.svelte";
   import CopyRow from "$lib/scenario/CopyRow.svelte";
   import { scenario } from "$lib/scenario/state.svelte";
-  import { isSecret } from "$lib/scenario/tags.svelte";
+  import { isSecret, tags } from "$lib/scenario/tags.svelte";
   import Select from "$lib/ui/Select.svelte";
   import Switch from "$lib/ui/Switch.svelte";
-  import type { GroupBlock, SentenceBlock } from "$lib/scenario/types";
+  import type { Block, GroupBlock, SentenceBlock } from "$lib/scenario/types";
 
   let { active = true }: { active?: boolean } = $props();
 
-  const rows = $derived((scenario.active?.blocks ?? []).map((block, index) => ({ block, index })));
+  /** 카드 하나: 블록 하나, 또는 「한 줄씩」 펼친 그룹의 한 줄 (`line`). `key`로 고르고 찾는다. */
+  interface Row {
+    key: string;
+    block: Block;
+    index: number;
+    line?: number;
+  }
+
+  const rows = $derived.by(() => {
+    const out: Row[] = [];
+    (scenario.active?.blocks ?? []).forEach((block, index) => {
+      if (block.type === "group" && !isSecret(block) && scenario.expandedGroups.has(block.id)) {
+        const count = scenario.finalText(block).split("\n").length;
+        for (let line = 0; line < count; line++) out.push({ key: `${block.id}:${line}`, block, index, line });
+      } else {
+        out.push({ key: String(block.id), block, index });
+      }
+    });
+    return out;
+  });
+
+  /** 블록의 첫 카드 키 (펼친 그룹이면 첫 줄) */
+  const firstKey = (id: number) => rows.find((r) => r.block.id === id)?.key ?? null;
 
   const sectionOptions = $derived(
     scenario.sections.map((s, i) => ({ value: String(i), label: `${i + 1}. ${s.label}`, hint: `${s.blocks.length}줄` })),
   );
 
-  let selectedId = $state<number | null>(null);
-  let copyRows: Record<number, CopyRow> = $state({});
+  let selectedKey = $state<string | null>(null);
+  let copyRows: Record<string, CopyRow> = $state({});
   let list = $state<HTMLDivElement>();
 
-  function reveal(id: number) {
-    list?.querySelector(`[data-block-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
+  function reveal(key: string, block: ScrollLogicalPosition = "nearest") {
+    list?.querySelector(`[data-key="${key}"]`)?.scrollIntoView({ block });
+  }
+
+  /** 그룹을 줄마다 펼치거나 다시 카드 하나로 접는다. 그 그룹을 고르고 있었다면 펼친 첫 줄 / 접은 카드를 고른다. */
+  function setExpanded(group: GroupBlock, on: boolean) {
+    const wasSelected = rows.find((r) => r.key === selectedKey)?.block.id === group.id;
+    if (on) scenario.expandedGroups.add(group.id);
+    else scenario.expandedGroups.delete(group.id);
+    if (wasSelected) selectedKey = on ? `${group.id}:0` : String(group.id);
   }
 
   /** 지금 화면에 그려진 집합 id (집합이 바뀐 것을 알아채는 데만 쓰므로 반응형이 아니다) */
   let shownId: number | null = null;
 
   function remember() {
-    if (shownId !== null && list) memory.set(shownId, { scrollTop: list.scrollTop, selectedId });
+    if (shownId !== null && list) memory.set(shownId, { scrollTop: list.scrollTop, selectedKey });
   }
 
   // 집합이 바뀌면 그 집합에서 마지막으로 보던 위치·카드로 돌아간다 (처음 여는 집합은 맨 위).
@@ -47,29 +77,30 @@
       const opening = shownId === null;
       shownId = sectionId;
       const focused = scenario.focusedId;
-      if (opening && focused !== null && rows.some((r) => r.block.id === focused)) {
-        selectedId = focused;
-        list?.querySelector(`[data-block-id="${focused}"]`)?.scrollIntoView({ block: "center" });
+      const focusedKey = focused === null ? null : firstKey(focused);
+      if (opening && focusedKey !== null) {
+        selectedKey = focusedKey;
+        reveal(focusedKey, "center");
         return;
       }
       const saved = sectionId === null ? undefined : memory.get(sectionId);
-      selectedId = saved && rows.some((r) => r.block.id === saved.selectedId) ? saved.selectedId : null;
+      selectedKey = saved && rows.some((r) => r.key === saved.selectedKey) ? saved.selectedKey : null;
       if (list) list.scrollTop = saved?.scrollTop ?? 0;
     });
   });
 
   // 카드를 고를 때마다 기억해 둔다 (스크롤은 onscroll에서).
   $effect(() => {
-    void selectedId;
+    void selectedKey;
     untrack(remember);
   });
 
   function selectRelative(step: 1 | -1) {
     if (!rows.length) return;
-    const i = rows.findIndex((r) => r.block.id === selectedId);
+    const i = rows.findIndex((r) => r.key === selectedKey);
     const next = rows[Math.max(0, Math.min(rows.length - 1, i < 0 ? 0 : i + step))];
-    selectedId = next.block.id;
-    reveal(next.block.id);
+    selectedKey = next.key;
+    reveal(next.key);
   }
 
   function stepSection(step: 1 | -1) {
@@ -91,9 +122,9 @@
     } else if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && !target.closest("button")) {
       e.preventDefault();
       stepSection(e.key === "ArrowRight" ? 1 : -1);
-    } else if (e.key === "Enter" && selectedId !== null && !target.closest("button, [role=button]")) {
+    } else if (e.key === "Enter" && selectedKey !== null && !target.closest("button, [role=button]")) {
       e.preventDefault();
-      copyRows[selectedId]?.copy();
+      copyRows[selectedKey]?.copy();
     }
   }
 
@@ -140,19 +171,27 @@
   </header>
 
   <div class="list" role="listbox" aria-label="복사할 문장" bind:this={list} onscroll={remember}>
-    {#each rows as { block, index }, i (block.id)}
+    {#each rows as { key, block, index, line }, i (key)}
+      {#if line === 0 && block.type === "group"}
+        <div class="group-head" style:--tag={tags.get(block.tag)?.color}>
+          <span class="group-name"><Group size={12} /> {scenario.groupLabels.get(block.id)}{block.title ? ` · ${block.title}` : ""} · 한 줄씩</span>
+          <button class="btn sm" onclick={() => setExpanded(block, false)} title="다시 카드 하나로 합쳐 한 번에 복사합니다">덩어리로</button>
+        </div>
+      {/if}
       <CopyRow
-        bind:this={copyRows[block.id]}
+        bind:this={copyRows[key]}
         {block}
         {index}
-        selected={selectedId === block.id}
-        onselect={() => (selectedId = block.id)}
+        {line}
+        selected={selectedKey === key}
+        onselect={() => (selectedKey = key)}
+        onexpand={block.type === "group" ? () => setExpanded(block, true) : undefined}
         oncopied={() => {
-          // 다음 줄로 넘어가되 GM 정보 그룹은 건너뛴다 (복사할 일이 없으니)
+          // 다음 카드로 넘어가되 GM 정보 그룹은 건너뛴다 (복사할 일이 없으니)
           const next = rows.slice(i + 1).find((r) => !isSecret(r.block));
           if (next) {
-            selectedId = next.block.id;
-            reveal(next.block.id);
+            selectedKey = next.key;
+            reveal(next.key);
           }
         }}
       />
@@ -218,6 +257,26 @@
     gap: 6px;
     padding: 12px 14px 24px;
     overflow-y: auto;
+  }
+
+  /* 「한 줄씩」 펼친 그룹의 머리: 이름과 「덩어리로」 */
+  .group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 2px 4px 0 12px;
+    border-left: 3px solid var(--tag, var(--text-faint));
+  }
+
+  .group-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: color-mix(in srgb, var(--tag, var(--text-muted)) 60%, var(--text));
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .empty {

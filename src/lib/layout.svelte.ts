@@ -5,8 +5,12 @@ const KEY = "trpg.layout";
 /** 복사 페이지에서 시나리오 패널과 매크로 패널을 어떻게 놓을지 */
 export type CopyArrangement = "scenario-left" | "macros-left" | "scenario-top" | "macros-top";
 
+/** 색 테마: 시스템(OS 설정을 따름) / 라이트 / 다크 */
+export type Theme = "system" | "light" | "dark";
+
 interface Saved {
   alwaysOnTop: boolean;
+  theme: Theme;
   sectionsOpen: boolean;
   rulesOpen: boolean;
   editorSwap: boolean;
@@ -14,6 +18,8 @@ interface Saved {
   viewerSide: "left" | "right";
   viewerWidth: number;
   viewerSync: boolean;
+  toolbarOpen: boolean;
+  lineBarOpen: boolean;
   copyArrangement: CopyArrangement;
   macroSize: number;
   showScenario: boolean;
@@ -23,6 +29,7 @@ interface Saved {
 
 const DEFAULTS: Saved = {
   alwaysOnTop: false,
+  theme: "system",
   sectionsOpen: true,
   rulesOpen: true,
   editorSwap: false,
@@ -30,6 +37,8 @@ const DEFAULTS: Saved = {
   viewerSide: "right",
   viewerWidth: 520,
   viewerSync: true,
+  toolbarOpen: true,
+  lineBarOpen: true,
   copyArrangement: "scenario-left",
   macroSize: 400,
   showScenario: true,
@@ -48,6 +57,7 @@ function load(): Saved {
 class Layout {
   /** 다른 창을 눌러도 이 창이 뒤로 가려지지 않게 맨 위에 고정 */
   alwaysOnTop = $state(DEFAULTS.alwaysOnTop);
+  theme = $state<Theme>(DEFAULTS.theme);
 
   // 편집 페이지
   sectionsOpen = $state(DEFAULTS.sectionsOpen);
@@ -59,6 +69,9 @@ class Layout {
   viewerSide = $state<"left" | "right">(DEFAULTS.viewerSide);
   viewerWidth = $state(DEFAULTS.viewerWidth);
   viewerSync = $state(DEFAULTS.viewerSync);
+  /** 편집기 위의 두 줄(줄 찾기·도구 줄, 현재 줄 막대)을 펼쳐 둘지 */
+  toolbarOpen = $state(DEFAULTS.toolbarOpen);
+  lineBarOpen = $state(DEFAULTS.lineBarOpen);
 
   // 복사 페이지
   copyArrangement = $state<CopyArrangement>(DEFAULTS.copyArrangement);
@@ -72,9 +85,16 @@ class Layout {
   constructor() {
     Object.assign(this, load());
     $effect.root(() => {
+      // 테마: 「시스템」이면 속성을 빼서 OS 설정(prefers-color-scheme)을 따르게 한다 (→ app.css)
+      $effect(() => {
+        const root = document.documentElement;
+        if (this.theme === "system") delete root.dataset.theme;
+        else root.dataset.theme = this.theme;
+      });
       $effect(() => {
         const saved: Saved = {
           alwaysOnTop: this.alwaysOnTop,
+          theme: this.theme,
           sectionsOpen: this.sectionsOpen,
           rulesOpen: this.rulesOpen,
           editorSwap: this.editorSwap,
@@ -82,6 +102,8 @@ class Layout {
           viewerSide: this.viewerSide,
           viewerWidth: this.viewerWidth,
           viewerSync: this.viewerSync,
+          toolbarOpen: this.toolbarOpen,
+          lineBarOpen: this.lineBarOpen,
           copyArrangement: this.copyArrangement,
           macroSize: this.macroSize,
           showScenario: this.showScenario,

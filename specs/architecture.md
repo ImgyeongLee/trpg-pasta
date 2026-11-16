@@ -27,10 +27,10 @@ src-tauri/src/
 
 src/
   routes/+page.svelte 앱 껍데기: 왼쪽 메뉴, 편집 페이지 ↔ 복사 페이지, ⌘S, 닫기 경고
-  app.css             색·글꼴 토큰 (라이트/다크)
+  app.css             색·글꼴 토큰 (라이트/다크). 다크는 OS가 다크이고 `data-theme="light"`가 아닐 때, 또는 `<html data-theme="dark">`일 때
   lib/icons.ts        Lucide 아이콘 묶음
   lib/layout.svelte.ts 화면 배치 설정 (localStorage)
-  lib/ui/             자체 컨트롤: Select, Switch, ConfirmButton, Splitter, PinButton, DialogHost(dialog.svelte.ts)
+  lib/ui/             자체 컨트롤: Select, Switch, ConfirmButton, Splitter, PinButton, ThemeButton, DialogHost(dialog.svelte.ts)
   lib/scenario/
     state.svelte.ts   시나리오 상태의 중심 (ScenarioState): 불러오기·집합·그룹·치환·세이브 직렬화·되돌리기
     types.ts          블록·세이브 형식 타입
@@ -44,7 +44,7 @@ src/
     editor/           CodeMirror 편집기 (SectionEditor, lines, decorations, LineBar, GroupCard, api)
     viewer/           원본 보기 (PdfViewer, GdocViewer, TextViewer, match, sync)
     TagPicker, CopyRow, NoteEditor, SpeakerTag, ImageView, SectionList, RulesPanel, ExportMenu, ImportPanel
-  lib/play/           복사 페이지 (CopyPage, ScenarioCopyPanel: 집합마다 보던 위치를 모듈 변수에 기억, GroupList)
+  lib/play/           복사 페이지 (CopyPage, ScenarioCopyPanel: 카드 키(`블록 id` 또는 펼친 그룹의 `블록 id:줄`)로 고르고, 집합마다 보던 위치를 모듈 변수에 기억, GroupList). 그룹 펼침·줄 복사 표시는 `scenario.expandedGroups`·`usedLines` (실행 중만)
   lib/macros/         채팅 매크로 (state, template, MacroBoard, MacroList, MacroCard)
 ```
 
@@ -92,7 +92,7 @@ GroupTag { id, name, color /* #rrggbb */, preset?, secret? /* GM 정보: 복사�
 | 작업 세이브          | 앱 데이터 폴더 `sessions/<id>.trpgsave` + `<id>.meta.json` | gzip JSON / JSON                     |
 | 세이브 파일 내보내기 | 사용자가 고른 곳 `*.trpgsave`                              | gzip JSON (열 때는 일반 JSON도 받음) |
 | 채팅 매크로          | 앱 데이터 폴더 `macros.json`                               | JSON                                 |
-| 화면 배치·복사 설정  | localStorage `trpg.layout` (「따옴표 빼고 복사」 포함)     | JSON                                 |
+| 화면 배치·복사 설정  | localStorage `trpg.layout` (테마·도구 줄 접기·「따옴표 빼고 복사」 포함; `app.html`이 그리기 전에 테마를 읽음) | JSON                                 |
 | 정리 옵션            | localStorage `trpg.scenario.options`                       | JSON                                 |
 | 이름 치환 규칙       | localStorage `trpg.scenario.rules` (세이브에도 들어감)     | JSON                                 |
 | 만든 태그            | localStorage `trpg.groupTags` (쓴 것은 세이브에도 들어감)  | JSON                                 |
